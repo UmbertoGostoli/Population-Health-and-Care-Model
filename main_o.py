@@ -27,6 +27,7 @@ def meta_params():
     m['thePresent'] = 2012
     m['statsCollectFrom'] = 1960
     m['policyStartYear'] = 2020
+    m['outputYear'] = 2015
     m['minStartAge'] = 20
     m['maxStartAge'] = 40
     m['verboseDebugging'] = False
@@ -164,8 +165,9 @@ def init_params():
     p['betaSocExp'] = 2.0
     p['rankGenderBias'] = 0.5
     p['deltageProb'] =  [0.0, 0.1, 0.25, 0.4, 0.2, 0.05]
-    p['numChildrenExp'] = 1.0
-    p['maleMarriageMultiplier'] = 1.3
+    p['bridesChildrenExp'] = 1.0
+    p['manWithChildrenBias'] = 0.5
+    p['maleMarriageMultiplier'] = 1.4
 
     # Unmer Need params
     p['unmetCareNeedDiscountParam'] = 0.5
@@ -229,8 +231,8 @@ def init_params():
     p['femaleMarriageModifierByDecade'] = [ 0.0, 0.5, 1.0, 1.0, 1.0, 0.6, 0.5, 0.4, 0.1, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0 ]
     p['basicMaleMarriageProb'] =  0.3 
     p['maleMarriageModifierByDecade'] = [ 0.0, 0.16, 0.5, 1.0, 0.8, 0.7, 0.66, 0.5, 0.4, 0.2, 0.1, 0.05, 0.01, 0.0, 0.0, 0.0 ]
-    p['basicDivorceRate'] = 0.06
-    p['variableDivorce'] = 0.06
+    p['basicDivorceRate'] = 0.09 # 0.06
+    p['variableDivorce'] = 0.09 # 0.06
     p['divorceModifierByDecade'] = [ 0.0, 1.0, 0.9, 0.5, 0.4, 0.2, 0.1, 0.03, 0.01, 0.001, 0.001, 0.001, 0.0, 0.0, 0.0, 0.0 ]
     p['divorceBias'] = 0.85
     p['probChildrenWithFather'] = 0.1

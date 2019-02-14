@@ -38,7 +38,7 @@ class Sim:
         self.Outputs = ['year', 'currentPop', 'households', 'averageHouseholdSize', 'marriageTally', 'marriagePropNow', 'divorceTally', 
                    'shareSingleParents', 'shareFemaleSingleParent', 'totalCareDemandHours', 'totalCareSupply', 'totalUnmetNeed', 'shareUnmetCareNeeds', 
                    'taxPayers', 'taxBurden', 'familyCareRatio', 'employmentRate', 'publicCare', 'totalTaxRevenue', 'totalPensionRevenue', 
-                   'pensionExpenditure', 'totalHospitalizationCost']
+                   'pensionExpenditure', 'totalHospitalizationCost', 'classShare_1', 'classShare_2', 'classShare_3', 'classShare_4', 'classShare_5']
         self.outputData = pd.DataFrame()
         # Save initial parametrs into Scenario folder
         self.folder = folder + '/Scenario_' + str(scenario)
@@ -255,9 +255,9 @@ class Sim:
         self.death_female = np.genfromtxt('deathrate.fem.csv', skip_header=0, delimiter=',')
         self.death_male = np.genfromtxt('deathrate.male.csv', skip_header=0, delimiter=',')
         
-        self.incomeDistribution = np.genfromtxt('incomeDistribution.csv', skip_header=0, delimiter=',')
-        
-        self.incomesPercentiles = np.genfromtxt('incomesPercentiles.csv', skip_header=0, delimiter=',')
+#        self.incomeDistribution = np.genfromtxt('incomeDistribution.csv', skip_header=0, delimiter=',')
+#        
+#        self.incomesPercentiles = np.genfromtxt('incomesPercentiles.csv', skip_header=0, delimiter=',')
         
         self.wealthPercentiles = np.genfromtxt('wealthDistribution.csv', skip_header=0, delimiter=',')
         
@@ -1524,12 +1524,26 @@ class Sim:
                     interestedWomen.append(w)
         
             for man in eligibleMen:
-                manMarriageProb = self.p['basicMaleMarriageProb']*self.p['maleMarriageModifierByDecade'][man.age/10]
+                ageClass = int(man.age/10)
+                manMarriageProb = self.p['basicMaleMarriageProb']*self.p['maleMarriageModifierByDecade'][ageClass]
+                ageClassPop = [x for x in eligibleMen if int(x.age/10) == ageClass]
+                noChildrenMen = [x for x in ageClassPop if len([y for y in x.children if y.dead == False and y.house == x.house]) == 0]
+                shareNoChildren = float(len(noChildrenMen))/float(len(ageClassPop))
+                den = shareNoChildren + (1-shareNoChildren)*self.p['manWithChildrenBias']
+                baseRate = manMarriageProb/den
+                if man in noChildrenMen:
+                    manMarriageProb = baseRate
+                else:
+                    manMarriageProb = baseRate*self.p['manWithChildrenBias']
+
+                
+                
+                
                 
                 # Adjusting for number of children
-                numChildrenWithMan = len([x for x in man.children if x.house == man.house])
-                childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithMan)
-                manMarriageProb *= childrenFactor
+#                numChildrenWithMan = len([x for x in man.children if x.house == man.house])
+#                childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithMan)
+#                manMarriageProb *= childrenFactor
                 
                 # Adjusting to increase rate
                 manMarriageProb *= self.p['maleMarriageMultiplier']
@@ -1569,7 +1583,7 @@ class Sim:
                             
                             numChildrenWithWoman = len([x for x in woman.children if x.house == woman.house])
                             
-                            childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithWoman)
+                            childrenFactor = 1/math.exp(self.p['bridesChildrenExp']*numChildrenWithWoman)
                             
                             marriageProb = geoFactor*socFactor*ageFactor*childrenFactor
                             
@@ -2168,7 +2182,8 @@ class Sim:
         outputs = [self.year, currentPop, households, averageHouseholdSize, self.marriageTally, marriagePropNow, self.divorceTally, 
                    shareSingleParents, shareFemaleSingleParent, totalCareDemandHours, totalCareSupply, totalUnmetNeed, shareUnmetCareNeeds, 
                    taxPayers, taxBurden, familyCareRatio, shareEmployed, self.publicCare, self.totalTaxRevenue, self.totalPensionRevenue, 
-                   self.pensionExpenditure, self.totalHospitalizationCost]
+                   self.pensionExpenditure, self.totalHospitalizationCost, self.socialClassShares[0], self.socialClassShares[1],
+                   self.socialClassShares[2], self.socialClassShares[3], self.socialClassShares[4]]
         
         if self.year == self.p['startYear']:
             if not os.path.exists(policyFolder):
