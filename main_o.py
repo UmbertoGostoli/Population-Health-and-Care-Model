@@ -27,7 +27,6 @@ def meta_params():
     m['thePresent'] = 2012
     m['statsCollectFrom'] = 1960
     m['policyStartYear'] = 2020
-    m['outputYear'] = 2015
     m['minStartAge'] = 20
     m['maxStartAge'] = 40
     m['verboseDebugging'] = False
@@ -40,7 +39,7 @@ def meta_params():
         ## Description of the map, towns, and houses
     m['mapGridXDimension'] = 8
     m['mapGridYDimension'] = 12    
-    m['townGridDimension'] = 25
+    m['townGridDimension'] = 35
     m['numHouseClasses'] = 3
     m['houseClasses'] = ['small','medium','large']
     m['cdfHouseClasses'] = [ 0.6, 0.9, 5.0 ]
@@ -94,12 +93,16 @@ def meta_params():
     m['multiprocessing'] = False
     m['numberProcessors'] = 3
     
-    fileName = 'metaParameters.csv'
+    
+    folder = 'defaultSimFolder'
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    filePath = folder + '/metaParameters.csv'
     c = m.copy()
     for key, value in c.iteritems():
         if not isinstance(value, list):
             c[key] = [value]
-    with open(fileName, "wb") as f:
+    with open(filePath, "wb") as f:
         csv.writer(f).writerow(c.keys())
         csv.writer(f).writerows(itertools.izip_longest(*c.values()))
         
@@ -128,7 +131,8 @@ def init_params():
     
     #### SES-version parameters   ######
     
-    p['mortalityBias'] = 0.9   ### SES death bias
+    p['maleMortalityBias'] = 0.8   ### SES death bias
+    p['femaleMortalityBias'] = 0.85
     p['careNeedBias'] = 0.9   ### Care Need Level death bias
     p['unmetCareNeedBias'] = 0.5  ### Unmet Care Need death bias
     
@@ -165,9 +169,8 @@ def init_params():
     p['betaSocExp'] = 2.0
     p['rankGenderBias'] = 0.5
     p['deltageProb'] =  [0.0, 0.1, 0.25, 0.4, 0.2, 0.05]
-    p['bridesChildrenExp'] = 1.0
-    p['manWithChildrenBias'] = 0.5
-    p['maleMarriageMultiplier'] = 1.4
+    p['numChildrenExp'] = 1.0
+    p['maleMarriageMultiplier'] = 1.3
 
     # Unmer Need params
     p['unmetCareNeedDiscountParam'] = 0.5
@@ -231,8 +234,8 @@ def init_params():
     p['femaleMarriageModifierByDecade'] = [ 0.0, 0.5, 1.0, 1.0, 1.0, 0.6, 0.5, 0.4, 0.1, 0.01, 0.01, 0.0, 0.0, 0.0, 0.0, 0.0 ]
     p['basicMaleMarriageProb'] =  0.3 
     p['maleMarriageModifierByDecade'] = [ 0.0, 0.16, 0.5, 1.0, 0.8, 0.7, 0.66, 0.5, 0.4, 0.2, 0.1, 0.05, 0.01, 0.0, 0.0, 0.0 ]
-    p['basicDivorceRate'] = 0.09 # 0.06
-    p['variableDivorce'] = 0.09 # 0.06
+    p['basicDivorceRate'] = 0.06
+    p['variableDivorce'] = 0.06
     p['divorceModifierByDecade'] = [ 0.0, 1.0, 0.9, 0.5, 0.4, 0.2, 0.1, 0.03, 0.01, 0.001, 0.001, 0.001, 0.0, 0.0, 0.0, 0.0 ]
     p['divorceBias'] = 0.85
     p['probChildrenWithFather'] = 0.1
@@ -248,6 +251,11 @@ def init_params():
     p['probFamilyMoveModifierByDecade'] = [ 0.0, 0.5, 0.8, 0.5, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1 ]
     p['agingParentsMoveInWithKids'] = 0.1
     p['variableMoveBack'] = 0.1
+    
+    p['relocationCostParam'] = 0.5
+    p['relocationCostBeta'] = 0.1
+    p['incomeRelocationBeta'] = 0.001
+    p['baserelocationRate'] = 0.1
 
     # Save default parameters in separated folder
     folder = 'defaultSimFolder'
@@ -352,7 +360,7 @@ def loadPolicies(scenarios):
 
             elif policiesParams['combinationKey'][0] == 2: # One scenario for each value in the policyParams file
                 for n in range(numberRows):
-                    for i in names[1:]:
+                    for j in names[1:]:
                         policyParams = policies[i][0].copy()
                         if not pd.isnull(policiesParams[j][n]):
                             policyParams[j][0] = policiesParams[j][n]
@@ -365,11 +373,11 @@ def loadPolicies(scenarios):
             else: # All the different combinations of values in the policyParams file
                 policyList = []
                 parNames = []
-                for i in names[1:]:
-                    if pd.isnull(policiesParams[i][0]):
+                for j in names[1:]:
+                    if pd.isnull(policiesParams[j][0]):
                         continue
-                    parNames.append(i)
-                    policyList.append([x for x in policiesParams[i] if pd.isnull(x) == False])
+                    parNames.append(j)
+                    policyList.append([x for x in policiesParams[j] if pd.isnull(x) == False])
                 combinations = list(itertools.product(*policyList))
                 for c in combinations:
                     policyParams = policies[i][0].copy()

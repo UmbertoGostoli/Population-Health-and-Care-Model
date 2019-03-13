@@ -174,27 +174,6 @@ def singlePolicyGraphs(output, policyFolder, p):
     pp = PdfPages(path)
     pp.savefig(fig)
     pp.close()
-    
-    share_1 = output.loc[output['year'] == p['outputYear'], 'classShare_1'].values[0]
-    share_2 = output.loc[output['year'] == p['outputYear'], 'classShare_2'].values[0]
-    share_3 = output.loc[output['year'] == p['outputYear'], 'classShare_3'].values[0]
-    share_4 = output.loc[output['year'] == p['outputYear'], 'classShare_4'].values[0]
-    share_5 = output.loc[output['year'] == p['outputYear'], 'classShare_5'].values[0]
-    fig, ax = plt.subplots()
-    objects = ('SES I', 'SES II', 'SES III', 'SES IV', 'SES V')
-    y_pos = np.arange(len(objects))
-    shares = [share_1, share_2, share_3, share_4, share_5]
-    ax.bar(y_pos, shares, align='center', alpha=0.5)
-    ax.set_xticks(np.arange(len(objects)))
-    ax.set_xticklabels(objects)
-    ax.xaxis.set_ticks_position('none')
-    ax.set_ylabel('SES shares')
-    ax.set_title('Population SES Shares')
-    fig.tight_layout()
-    path = os.path.join(folder, 'sharesClasses.pdf')
-    pp = PdfPages(path)
-    pp.savefig(fig)
-    pp.close()
 
     
 def multiplePoliciesGraphs(output, scenarioFolder, p, numPolicies):
