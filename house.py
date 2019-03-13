@@ -1,6 +1,7 @@
 
 import random
 import numpy as np
+import networkx as nx
 
 class House:
     counter = 1
@@ -22,8 +23,10 @@ class House:
         self.y = hy
         self.icon = None
         self.householdIncome = 0
+        self.perCapitaIncome = 0
         self.name = self.town.name + "-" + str(hx) + "-" + str(hy)
         self.id = House.counter
+        self.kinshipNetwork = nx.Graph()
         House.counter += 1
                             
 class Town:

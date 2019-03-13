@@ -38,7 +38,7 @@ class Sim:
         self.Outputs = ['year', 'currentPop', 'households', 'averageHouseholdSize', 'marriageTally', 'marriagePropNow', 'divorceTally', 
                    'shareSingleParents', 'shareFemaleSingleParent', 'totalCareDemandHours', 'totalCareSupply', 'totalUnmetNeed', 'shareUnmetCareNeeds', 
                    'taxPayers', 'taxBurden', 'familyCareRatio', 'employmentRate', 'publicCare', 'totalTaxRevenue', 'totalPensionRevenue', 
-                   'pensionExpenditure', 'totalHospitalizationCost', 'classShare_1', 'classShare_2', 'classShare_3', 'classShare_4', 'classShare_5']
+                   'pensionExpenditure', 'totalHospitalizationCost']
         self.outputData = pd.DataFrame()
         # Save initial parametrs into Scenario folder
         self.folder = folder + '/Scenario_' + str(scenario)
@@ -238,6 +238,8 @@ class Sim:
                 woman = man.partner
                 woman.house = man.house
                 woman.sec = man.sec
+                man.yearMarried.append(int(self.p['startYear']))
+                woman.yearMarried.append(int(self.p['startYear']))
                 man.house.occupants.append(man)
                 man.house.occupants.append(woman)
 
@@ -255,9 +257,9 @@ class Sim:
         self.death_female = np.genfromtxt('deathrate.fem.csv', skip_header=0, delimiter=',')
         self.death_male = np.genfromtxt('deathrate.male.csv', skip_header=0, delimiter=',')
         
-#        self.incomeDistribution = np.genfromtxt('incomeDistribution.csv', skip_header=0, delimiter=',')
-#        
-#        self.incomesPercentiles = np.genfromtxt('incomesPercentiles.csv', skip_header=0, delimiter=',')
+        self.incomeDistribution = np.genfromtxt('incomeDistribution.csv', skip_header=0, delimiter=',')
+        
+        self.incomesPercentiles = np.genfromtxt('incomesPercentiles.csv', skip_header=0, delimiter=',')
         
         self.wealthPercentiles = np.genfromtxt('wealthDistribution.csv', skip_header=0, delimiter=',')
         
@@ -432,6 +434,9 @@ class Sim:
         self.updateIncome()
         
         self.updateWealth()
+        
+        
+        
         
         # print 'Did updateIncome'
         
@@ -646,7 +651,7 @@ class Sim:
 
 ####################   doDeath - SES version    ################################################
     def computeClassShares(self):
-        
+    
         self.socialClassShares[:] = []
         self.careNeedShares[:] = []
         numPop = float(len(self.pop.livingPeople))
@@ -663,13 +668,19 @@ class Sim:
             self.careNeedShares.append(needShares)    
         
     
-    def deathProb(self, baseRate, classRank, needLevel):  ##, shareUnmetNeed, classPop):
+    def deathProb(self, baseRate, sex, classRank, needLevel):  ##, shareUnmetNeed, classPop):
+        
+        if sex == 'male':
+            mortalityBias = self.p['maleMortalityBias']
+        else:
+            mortalityBias = self.p['femaleMortalityBias']
+        
         a = 0
         for i in range(int(self.p['numberClasses'])):
-            a += self.socialClassShares[i]*math.pow(self.p['mortalityBias'], i)
+            a += self.socialClassShares[i]*math.pow(mortalityBias, i)
         lowClassRate = baseRate/a
         
-        classRate = lowClassRate*math.pow(self.p['mortalityBias'], classRank)
+        classRate = lowClassRate*math.pow(mortalityBias, classRank)
        
         a = 0
         for i in range(int(self.p['numCareLevels'])):
@@ -690,13 +701,19 @@ class Sim:
         
         return deathProb
     
-    def deathProb_UCN(self, baseRate, classRank, needLevel, shareUnmetNeed, classPop):
+    def deathProb_UCN(self, baseRate, sex, classRank, needLevel, shareUnmetNeed, classPop):
+        
+        if sex == 'male':
+            mortalityBias = self.p['maleMortalityBias']
+        else:
+            mortalityBias = self.p['femaleMortalityBias']
+        
         a = 0
         for i in range(self.p['numberClasses']):
-            a += self.socialClassShares[i]*math.pow(self.p['mortalityBias'], i)
+            a += self.socialClassShares[i]*math.pow(mortalityBias, i)
         lowClassRate = baseRate/a
         
-        classRate = lowClassRate*math.pow(self.p['mortalityBias'], classRank)
+        classRate = lowClassRate*math.pow(mortalityBias, classRank)
        
         a = 0
         for i in range(self.p['numCareLevels']):
@@ -737,9 +754,9 @@ class Sim:
                     
                 classPop = [x for x in self.pop.livingPeople if x.careNeedLevel == person.careNeedLevel]
                 
-                dieProb = self.deathProb(rawRate, person.classRank, person.careNeedLevel)
+                dieProb = self.deathProb(rawRate, person.sex, person.parentsClassRank, person.careNeedLevel)
 
-                # dieProb = self.deathProb_UCN(rawRate, person.classRank, person.careNeedLevel, person.averageShareUnmetNeed, classPop)
+                # dieProb = self.deathProb_UCN(rawRate, person.sex, person.parentsClassRank, person.careNeedLevel, person.averageShareUnmetNeed, classPop)
 
             #############################################################################
             
@@ -770,9 +787,9 @@ class Sim:
                 
                 classPop = [x for x in self.pop.livingPeople if x.careNeedLevel == person.careNeedLevel]
                 
-                dieProb = self.deathProb(rawRate, person.classRank, person.careNeedLevel)
+                dieProb = self.deathProb(rawRate, person.sex, person.parentsClassRank, person.careNeedLevel)
                 #### Temporarily by-passing the effect of unmet care need   ######
-                # dieProb = self.deathProb(rawRate, person.classRank, person.careNeedLevel, person.averageShareUnmetNeed, classPop)
+                # dieProb = self.deathProb_UCN(rawRate, person.sex, person.parentsClassRank, person.careNeedLevel, person.averageShareUnmetNeed, classPop)
                 
                 if random.random() < dieProb:
                     person.dead = True
@@ -992,6 +1009,7 @@ class Sim:
         
         for person in self.pop.livingPeople:
             person.age += 1
+            person.yearInTown += 1
         """Check whether people have moved on to a new status in life."""
         peopleNotYetRetired = [x for x in self.pop.livingPeople if x.status != 'retired']
         for person in peopleNotYetRetired:
@@ -1198,6 +1216,11 @@ class Sim:
         self.pensionExpenditure = self.p['statePension']*len(pensioners) + totalIncome*self.p['statePensionContribution']
         self.statePensionExpenditure.append(self.pensionExpenditure)
         
+        households = [x for x in self.map.occupiedHouses]
+        for house in households:
+            house.householdIncome = sum([x.income for x in house.occupants])
+            house.perCapitaIncome = house.householdIncome/float(len(house.occupants))
+        
         # Assign incomes according to empirical income distribution
         #####   Temporarily disactivating the top-down income attribution   ############################
         
@@ -1387,13 +1410,15 @@ class Sim:
 #        marriedPercentage = float(marriedLadies)/float(adultLadies)
         
         for woman in womenOfReproductiveAge:
-
+            
+            householdRank = max([woman.classRank, woman.partner.classRank])
+            
             if self.year < 1951:
                 rawRate = self.p['growingPopBirthProb']
-                birthProb = self.computeBirthProb(self.p['fertilityBias'], rawRate, woman.classRank)
+                birthProb = self.computeBirthProb(self.p['fertilityBias'], rawRate, householdRank)
             else:
                 rawRate = self.fert_data[(self.year - woman.birthdate)-16, self.year-1950]
-                birthProb = self.computeBirthProb(self.p['fertilityBias'], rawRate, woman.classRank)/marriedPercentage[woman.classRank]
+                birthProb = self.computeBirthProb(self.p['fertilityBias'], rawRate, householdRank)/marriedPercentage[householdRank]
                 
             # birthProb = self.computeBirthProb(self.p['fertilityBias'], rawRate, woman.classRank)
             
@@ -1405,7 +1430,8 @@ class Sim:
             if random.random() < birthProb:
                 # (self, mother, father, age, birthYear, sex, status, house,
                 # classRank, sec, edu, wage, income, finalIncome):
-                baby = Person(woman, woman.partner, self.year, 0, 'random', woman.house, woman.sec, -1, 0, 0, 0, 0, 0, 0, 'child', False)
+                parentsClassRank = max([woman.classRank, woman.partner.classRank])
+                baby = Person(woman, woman.partner, self.year, 0, 'random', woman.house, woman.sec, -1, parentsClassRank, 0, 0, 0, 0, 0, 0, 'child', False)
                 self.pop.allPeople.append(baby)
                 self.pop.livingPeople.append(baby)
                 woman.house.occupants.append(baby)
@@ -1524,26 +1550,12 @@ class Sim:
                     interestedWomen.append(w)
         
             for man in eligibleMen:
-                ageClass = int(man.age/10)
-                manMarriageProb = self.p['basicMaleMarriageProb']*self.p['maleMarriageModifierByDecade'][ageClass]
-                ageClassPop = [x for x in eligibleMen if int(x.age/10) == ageClass]
-                noChildrenMen = [x for x in ageClassPop if len([y for y in x.children if y.dead == False and y.house == x.house]) == 0]
-                shareNoChildren = float(len(noChildrenMen))/float(len(ageClassPop))
-                den = shareNoChildren + (1-shareNoChildren)*self.p['manWithChildrenBias']
-                baseRate = manMarriageProb/den
-                if man in noChildrenMen:
-                    manMarriageProb = baseRate
-                else:
-                    manMarriageProb = baseRate*self.p['manWithChildrenBias']
-
-                
-                
-                
+                manMarriageProb = self.p['basicMaleMarriageProb']*self.p['maleMarriageModifierByDecade'][man.age/10]
                 
                 # Adjusting for number of children
-#                numChildrenWithMan = len([x for x in man.children if x.house == man.house])
-#                childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithMan)
-#                manMarriageProb *= childrenFactor
+                numChildrenWithMan = len([x for x in man.children if x.house == man.house])
+                childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithMan)
+                manMarriageProb *= childrenFactor
                 
                 # Adjusting to increase rate
                 manMarriageProb *= self.p['maleMarriageMultiplier']
@@ -1583,7 +1595,7 @@ class Sim:
                             
                             numChildrenWithWoman = len([x for x in woman.children if x.house == woman.house])
                             
-                            childrenFactor = 1/math.exp(self.p['bridesChildrenExp']*numChildrenWithWoman)
+                            childrenFactor = 1/math.exp(self.p['numChildrenExp']*numChildrenWithWoman)
                             
                             marriageProb = geoFactor*socFactor*ageFactor*childrenFactor
                             
@@ -1884,10 +1896,19 @@ class Sim:
                         
         
             
-            elif person.partner != None and person.yearMarried != self.year:
+            elif person.partner != None and person.yearMarried[-1] != self.year:
                 ## any other kind of married person, e.g., a normal family with kids
-                if random.random() < ( self.p['basicProbFamilyMove']
-                                       * self.p['probFamilyMoveModifierByDecade'][int(ageClass)] ):
+                house = person.house
+                household = [x for x in house.occupants]
+                
+                relocationCost = sum([math.pow(x.yearInTown, self.p['relocationCostParam']) for x in household])
+                relocationCostFactor = math.exp(self.p['relocationCostBeta']*relocationCost)
+                perCapitaIncome = float(sum([x.income for x in household]))/float(len(household))
+                incomeFactor = math.exp(self.p['incomeRelocationBeta']*perCapitaIncome)
+                relativeRelocationCostFactor = relocationCostFactor/incomeFactor
+                probRelocation = self.p['baserelocationRate']/relativeRelocationCostFactor
+                
+                if random.random() < probRelocation: #self.p['basicProbFamilyMove']* self.p['probFamilyMoveModifierByDecade'][int(ageClass)]:
                     peopleToMove = [x for x in person.house.occupants]
 #                    personChildren = self.bringTheKids(person)
 #                    peopleToMove += personChildren
@@ -1997,6 +2018,9 @@ class Sim:
             if i.house == newHouse:
                 print 'Error: new house is the old house!'
                 sys.exit()
+                
+            if newHouse.town != departureHouse.town:
+                i.yearInTown = 0
                 
             oldHouse = i.house
             
@@ -2182,8 +2206,7 @@ class Sim:
         outputs = [self.year, currentPop, households, averageHouseholdSize, self.marriageTally, marriagePropNow, self.divorceTally, 
                    shareSingleParents, shareFemaleSingleParent, totalCareDemandHours, totalCareSupply, totalUnmetNeed, shareUnmetCareNeeds, 
                    taxPayers, taxBurden, familyCareRatio, shareEmployed, self.publicCare, self.totalTaxRevenue, self.totalPensionRevenue, 
-                   self.pensionExpenditure, self.totalHospitalizationCost, self.socialClassShares[0], self.socialClassShares[1],
-                   self.socialClassShares[2], self.socialClassShares[3], self.socialClassShares[4]]
+                   self.pensionExpenditure, self.totalHospitalizationCost]
         
         if self.year == self.p['startYear']:
             if not os.path.exists(policyFolder):
